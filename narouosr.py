@@ -102,7 +102,7 @@ def osr(body):
 		
 	return(True)
 
-#渡ってきた文字列の頭とお尻のn個の改行を消し、お尻に一つ改行を入れる
+#渡ってきた文字列の頭とお尻のn個の改行を消す
 #kaigyo(str)
 #文字列を返す
 def kaigyo(moji):
