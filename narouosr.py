@@ -17,16 +17,24 @@
 def readfeed(RSS_URL):
 	import feedparser
 	import re
-	news_dic = feedparser.parse(RSS_URL)
-	ret= []
-	for i in range(5):
-		ititle=re.split('[\-\]第部]',news_dic.entries[i].title)#タイトルの余計なとこを取る
-		pubtime = news_dic.entries[0].published_parsed # 何時に投稿したか
-		itime = str(pubtime.tm_hour + 9) # 日本時間に直す
-		#戻り値をセットして返す
-		j={'title':ititle[1], 'num': ititle[3], 'time':itime,}
+	ent = feedparser.parse(RSS_URL)['entries']#フィードを取得
+	# なぜか新着順で並んでないので一旦全部リストに入れてソートする
+	ent= [{'id': e['id'], 'time': e['published'], 'title': e['title']}for e in ent]# 一旦リストに格納
+	ent.sort(key=lambda x: x['time'], reverse=True)# ソートする
+	# 新着5件をリストに入れつつタイトルを整える
+	ret=[]
+	for x in range(5):
+		#タイトルの余計なとこを取る
+		if '短編小説[' in ent[x]['title']:
+			ititle= re.split('[\[\]]',ent[x]['title'])
+			n= 0 #短編の話数は0とする
+		else:
+			ititle=re.split('[\-\]第部]',ent[x]['title'])
+			n= ititle[3] #話数
+		j= {'num':n, 'id': ent[x]['id'], 'time': ent[x]['time'], 'title': ititle[1]}
 		ret.append(j)
 	return(ret)
+
 
 #記事を決定　降順で表示
 # inputindex(dict-no-list)
@@ -111,7 +119,7 @@ import configparser
 inifile = configparser.ConfigParser()
 inifile.read('narouosr.ini', 'UTF-8')
 
-#フィードから必要な部分を抽出した記事のリストをもらう
+#フィードから必要な部分を抽出した辞書リストをもらう
 feeds= readfeed(inifile.get('user','rss'))
 
 #どの記事をお知らせするのか番号を決定
@@ -126,11 +134,14 @@ temp= inifile.get('temp',keys[choosebaitai(keys)]) #インタラクティブに�
 #お知らせを作る
 num1= int(feeds[index]['num'])
 num0= num1 - 1
-
 osrnum1= str(num1) #記事番号　URLの末尾のやつ
 osrnum0= str(num0) #一つ前の記事番号
+
+import datetime
+date = datetime.datetime.strptime(feeds[index]['time'], '%Y-%m-%dT%H:%M:%S+09:00')
+osrtime=str(date.hour)#記事投稿時間
+
 osrtitle= feeds[index]['title'] #記事サブタイトル
-osrtime= feeds[index]['time'] #記事投稿時間
 osraramain= inifile.get('arasuji','main') #メインのあらすじ
 osraramain= kaigyo(osraramain) #改行を整える
 osrarasub= inifile.get('arasuji','sub') #サブのあらすじ
